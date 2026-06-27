@@ -1,10 +1,4 @@
 // newsletterParser.js
-// newsletterFetchMessages devuelve un BinaryNode crudo (formato XML-like interno
-// de WhatsApp). Cada hijo <message> contiene un atributo server_id y, dentro,
-// un nodo <plaintext> o <enc> con el WAMessage serializado en protobuf.
-// Esta función lo normaliza a una lista de { serverId, message } donde
-// `message` ya es un objeto WAMessage usable con sock.relayMessage / downloadMediaMessage.
-
 const { proto } = require('baileys');
 
 /**
@@ -22,8 +16,6 @@ function parseNewsletterMessages(node) {
     const serverId = parseInt(child.attrs?.server_id, 10);
     if (!serverId || Number.isNaN(serverId)) continue;
 
-    // Dentro de <message> viene un <plaintext> con el WAMessage serializado en protobuf,
-    // o (raramente) <enc> si está cifrado de extremo a extremo a nivel newsletter.
     const plaintextNode = Array.isArray(child.content)
       ? child.content.find((c) => c.tag === 'plaintext')
       : null;
@@ -32,8 +24,9 @@ function parseNewsletterMessages(node) {
 
     let webMessageInfo;
     try {
-      // El contenido es un Buffer con el WebMessageInfo serializado
-      webMessageInfo = proto.WebMessageInfo.decode(plaintextNode.content);
+      // CORRECCIÓN: Asegurar que el contenido sea un Buffer nativo de Node.js
+      const contentBuffer = Buffer.from(plaintextNode.content);
+      webMessageInfo = proto.WebMessageInfo.decode(contentBuffer);
     } catch (err) {
       console.warn(`[parser] No se pudo decodificar mensaje server_id=${serverId}:`, err.message);
       continue;
@@ -42,7 +35,6 @@ function parseNewsletterMessages(node) {
     results.push({ serverId, message: webMessageInfo });
   }
 
-  // Orden ascendente por serverId (más viejo primero) para reenviar en orden cronológico
   results.sort((a, b) => a.serverId - b.serverId);
   return results;
 }

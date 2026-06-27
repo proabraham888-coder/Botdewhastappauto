@@ -13,7 +13,7 @@ module.exports = {
 
   // Número de teléfono para login por pairing code (con código de país, sin + ni espacios)
   // Ej: '521234567890'
-  PHONE_NUMBER: '521234567890',
+  PHONE_NUMBER: '5212261058297',
 
   // --- CANALES ORIGEN (los 10 que vas a monitorear) ---
   // Una vez que tengas los JIDs reales, van aquí:
